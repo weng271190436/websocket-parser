@@ -78,6 +78,16 @@ std::unique_ptr<std::vector<uint8_t>> create_text_message() {
     return create_message(0x1, message);
 }
 
+std::unique_ptr<std::vector<uint8_t>> create_binary_message() {
+    std::stringstream ss;
+    std::string message_fragment = "0123456789";
+    for (int i = 0; i < 1000; i++) {
+        ss << message_fragment;
+    }
+    std::string message = ss.str();
+    return create_message(0x2, message);
+}
+
 std::unique_ptr<std::vector<uint8_t>> create_continuation_message() {
     std::stringstream ss;
     std::string message_fragment = "continuation";
@@ -96,6 +106,11 @@ std::unique_ptr<std::vector<uint8_t>> create_ping_message() {
 std::unique_ptr<std::vector<uint8_t>> create_pong_message() {
     std::string message("pong");
     return create_message(0xa, message);
+}
+
+std::unique_ptr<std::vector<uint8_t>> create_close_message() {
+    std::string message("1000");
+    return create_message(0x8, message);
 }
 
 std::unique_ptr<Frame> parse(std::vector<uint8_t>& bytes) {
@@ -159,7 +174,7 @@ void print_frame(std::unique_ptr<Frame>& f) {
     std::cout << "rsv1: " << f->rsv1 << std::endl;
     std::cout << "rsv2: " << f->rsv2 << std::endl;
     std::cout << "rsv3: " << f->rsv3 << std::endl;
-    std::cout << "opcode: " << +f->opcode << std::endl;
+    std::cout << "opcode: " << "0x" << std::hex << static_cast<int>(f->opcode) << std::endl;
     std::cout << "payload_len: " << std::to_string(f->payload_len) << std::endl;
     std::cout << "masking_key: " << "0x" << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(f->mask_key_1) << " "
         << "0x" << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(f->mask_key_2) << " "
@@ -177,6 +192,13 @@ int main() {
     print_header(14, *text_bytes);
     std::unique_ptr<Frame> text_frame = parse(*text_bytes);
     print_frame(text_frame);
+    std::cout << std::endl;
+
+    std::cout << "create and parse binary message" << std::endl;
+    std::unique_ptr<std::vector<uint8_t>> binary_bytes = create_binary_message();
+    print_header(14, *binary_bytes);
+    std::unique_ptr<Frame> binary_frame = parse(*binary_bytes);
+    print_frame(binary_frame);
     std::cout << std::endl;
 
     std::cout << "create and parse continuation message" << std::endl;
@@ -198,5 +220,12 @@ int main() {
     print_header(6, *pong_bytes);
     std::unique_ptr<Frame> pong_frame = parse(*pong_bytes);
     print_frame(pong_frame);
+    std::cout << std::endl;
+
+    std::cout << "create and parse close message" << std::endl;
+    std::unique_ptr<std::vector<uint8_t>> close_bytes = create_close_message();
+    print_header(6, *close_bytes);
+    std::unique_ptr<Frame> close_frame = parse(*close_bytes);
+    print_frame(close_frame);
     std::cout << std::endl;
 }
